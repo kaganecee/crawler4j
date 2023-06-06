@@ -1,23 +1,6 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package edu.uci.ics.crawler4j.frontier;
 
-import java.util.List;
+import java.util.Stack;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,10 +10,6 @@ import com.sleepycat.je.Environment;
 
 import edu.uci.ics.crawler4j.crawler.CrawlConfig;
 import edu.uci.ics.crawler4j.url.WebURL;
-
-/**
- * @author Yasser Ganjisaffar
- */
 
 public class Frontier {
     protected static final Logger logger = LoggerFactory.getLogger(Frontier.class);
@@ -51,6 +30,8 @@ public class Frontier {
 
     protected Counters counters;
 
+    private Stack<WebURL> stack;
+
     public Frontier(Environment env, CrawlConfig config) {
         this.config = config;
         this.counters = new Counters(env, config);
@@ -61,11 +42,10 @@ public class Frontier {
                 inProcessPages = new InProcessPagesDB(env);
                 long numPreviouslyInProcessPages = inProcessPages.getLength();
                 if (numPreviouslyInProcessPages > 0) {
-                    logger.info("Rescheduling {} URLs from previous crawl.",
-                                numPreviouslyInProcessPages);
+                    logger.info("Rescheduling {} URLs from previous crawl.", numPreviouslyInProcessPages);
                     scheduledPages -= numPreviouslyInProcessPages;
 
-                    List<WebURL> urls = inProcessPages.get(IN_PROCESS_RESCHEDULE_BATCH_SIZE);
+                    Stack<WebURL> urls = inProcessPages.get(IN_PROCESS_RESCHEDULE_BATCH_SIZE);
                     while (!urls.isEmpty()) {
                         scheduleAll(urls);
                         inProcessPages.delete(urls.size());
@@ -76,24 +56,25 @@ public class Frontier {
                 inProcessPages = null;
                 scheduledPages = 0;
             }
+            
+            stack = new Stack<>();
         } catch (DatabaseException e) {
             logger.error("Error while initializing the Frontier", e);
             workQueues = null;
         }
     }
 
-    public void scheduleAll(List<WebURL> urls) {
+    public void scheduleAll(Stack<WebURL> urls) {
         int maxPagesToFetch = config.getMaxPagesToFetch();
         synchronized (mutex) {
             int newScheduledPage = 0;
-            for (WebURL url : urls) {
-                if ((maxPagesToFetch > 0) &&
-                    ((scheduledPages + newScheduledPage) >= maxPagesToFetch)) {
+            while (!urls.isEmpty()) {
+                if ((maxPagesToFetch > 0) && ((scheduledPages + newScheduledPage) >= maxPagesToFetch)) {
                     break;
                 }
 
                 try {
-                    workQueues.put(url);
+                    workQueues.put(urls.pop());
                     newScheduledPage++;
                 } catch (DatabaseException e) {
                     logger.error("Error while putting the url in the work queue", e);
@@ -124,26 +105,28 @@ public class Frontier {
         }
     }
 
-    public void getNextURLs(int max, List<WebURL> result) {
+    public void getNextURLs(int max, Stack<WebURL> result) {
         while (true) {
             synchronized (mutex) {
                 if (isFinished) {
                     return;
                 }
                 try {
-                    List<WebURL> curResults = workQueues.get(max);
+                    Stack<WebURL> curResults = workQueues.get(max);
                     workQueues.delete(curResults.size());
                     if (inProcessPages != null) {
                         for (WebURL curPage : curResults) {
                             inProcessPages.put(curPage);
                         }
                     }
-                    result.addAll(curResults);
+                    while (!curResults.isEmpty()) {
+                        result.push(curResults.pop());
+                    }
                 } catch (DatabaseException e) {
                     logger.error("Error while getting next urls", e);
                 }
 
-                if (result.size() > 0) {
+                if (!result.isEmpty()) {
                     return;
                 }
             }
