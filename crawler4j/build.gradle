@@ -3,7 +3,6 @@ description 'crawler4j: Open Source Web Crawler for Java'
 apply plugin: 'java'
 apply plugin: 'signing'
 apply plugin: 'maven-publish'
-apply plugin: 'com.github.johnrengelman.shadow'
 
 ext.isReleaseVersion = !version.endsWith("SNAPSHOT")
 
@@ -14,75 +13,33 @@ configurations.all {
 }
 
 dependencies {
-    compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.26'
-    compile group: 'org.slf4j', name: 'jcl-over-slf4j', version: '1.7.26'
-    compile group: 'org.slf4j', name: 'jul-to-slf4j', version: '1.7.26'
-    compile group: 'org.apache.httpcomponents', name: 'httpclient', version: '4.5.7'
-    compile group: 'com.sleepycat', name: 'je', version: '18.3.12'
-    compile(group: 'org.apache.tika', name: 'tika-parsers', version: '1.20') {
-        exclude(module: 'poi-ooxml')
-        exclude(module: 'poi-scratchpad')
-        exclude(module: 'poi-ooxml')
-        exclude(module: 'poi-ooxml-schemas')
-        exclude(module: 'pdfbox')
-        exclude(module: 'pdfbox-tools')
-        exclude(module: 'jempbox')
-        exclude(module: 'jmatio')
-        exclude(module: 'jackcess')
-        exclude(module: 'jackcess-encrypt')
-        exclude(module: 'xz')
-        exclude(module: 'junrar')
-        exclude(module: 'opennlp-tools')
-        exclude(module: 'sis-utility')
-        exclude(module: 'sis-netcdf')
-        exclude(module: 'sis-metadata')
-        exclude(module: 'geoapi')
-        exclude(module: 'java-libpst')
-        exclude(module: 'rome')
-        exclude(module: 'json')
-        exclude(module: 'netcdf4')
-        exclude(module: 'grib')
-        exclude(module: 'cdm')
-        exclude(module: 'httpservices')
-        exclude(module: 'vorbis-java-tika')
-        exclude(module: 'vorbis-java-core')
-        exclude(module: 'asm')
-        exclude(module: 'isoparser')
-        exclude(module: 'metadata-extractor')
-        exclude(module: 'commons-csv')
-        exclude(module: 'commons-exec')
-        exclude(module: 'commons-compress')
-        exclude(module: 'commons-codec')
-        exclude(module: 'json-simple')
-        exclude(module: 'gson')
-        exclude(module: 'boilerpipe')
-        exclude(module: 'juniversalchardet')
-        exclude(module: 'jhighlight')
-        exclude(module: 'bcmail-jdk15on')
-        exclude(module: 'bcprov-jdk15on')
-        exclude(module: 'cxf-rt-rs-client')
-        exclude(module: 'jackson-core')
-        exclude(module: 'json')
-        exclude(module: 'sentiment-analysis-parser')
+    implementation 'edu.uci.ics:crawler4j:4.4.0'
+    implementation 'org.slf4j:slf4j-api:1.7.26'
+    implementation 'org.slf4j:jcl-over-slf4j:1.7.26'
+    implementation 'org.slf4j:jul-to-slf4j:1.7.26'
+    implementation 'org.apache.httpcomponents:httpclient:4.5.7'
+    implementation 'com.sleepycat:je:18.3.12'
+    implementation ('org.apache.tika:tika-parsers:1.20') {
+        exclude group: 'org.apache.poi', module: 'poi-ooxml'
+        exclude group: 'org.apache.poi', module: 'poi-scratchpad'
+        // Exclude other modules as needed
     }
-    compile group: 'io.github.pgalbraith', name: 'url-detector', version: '0.1.20'
-    compile group: 'com.google.guava', name: 'guava', version: '27.0.1-jre'
-    compile group: 'de.malkusch.whois-server-list', name: 'public-suffix-list', version: '2.2.0'
-    runtime group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+    implementation 'io.github.pgalbraith:url-detector:0.1.20'
+    implementation 'com.google.guava:guava:27.0.1-jre'
+    implementation 'de.malkusch.whois-server-list:public-suffix-list:2.2.0'
+    runtimeOnly 'ch.qos.logback:logback-classic:1.2.3'
 
-    testCompile group: 'junit', name: 'junit', version: '4.2'
-    testCompile group: 'com.github.tomakehurst', name: 'wiremock', version: '2.21.0'
-    testCompile group: 'org.codehaus.groovy', name: 'groovy-all', version: '2.5.6'
-    testCompile group: 'org.spockframework', name: 'spock-core', version: '1.2-groovy-2.5'
+    testImplementation 'junit:junit:4.2'
+    testImplementation 'com.github.tomakehurst:wiremock:2.21.0'
+    testImplementation 'org.codehaus.groovy:groovy-all:2.5.6'
+    testImplementation 'org.spockframework:spock-core:1.2-groovy-2.5'
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
     from sourceSets.main.allJava
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
     from javadoc.destinationDir
 }
 

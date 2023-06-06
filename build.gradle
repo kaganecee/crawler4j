@@ -40,13 +40,6 @@ subprojects {
         configFile = new File(rootDir, 'config/checkstyle.xml')
     }
 
-    tasks.withType(Checkstyle) {
-        reports {
-            xml.enabled false
-            html.enabled false
-        }
-    }
-
     task checkstyle {
         dependsOn checkstyleMain
         dependsOn checkstyleTest
@@ -71,10 +64,6 @@ subprojects {
             logger.lifecycle("Starting Test: " + descriptor)
         }
 
-        reports {
-            junitXml.enabled = false
-            html.enabled = true
-        }
 
         outputs.upToDateWhen { false }
 
